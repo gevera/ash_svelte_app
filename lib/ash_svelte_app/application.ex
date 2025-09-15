@@ -8,6 +8,7 @@ defmodule AshSvelteApp.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      {NodeJS.Supervisor, [path: LiveSvelte.SSR.NodeJS.server_path(), pool_size: 4]},
       AshSvelteAppWeb.Telemetry,
       AshSvelteApp.Repo,
       {DNSCluster, query: Application.get_env(:ash_svelte_app, :dns_cluster_query) || :ignore},

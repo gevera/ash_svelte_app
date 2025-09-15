@@ -55,7 +55,7 @@ defmodule AshSvelteApp.MixProject do
       {:phoenix_live_view, "~> 1.1.0"},
       {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.3"},
-      {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
+      # {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.3", runtime: Mix.env() == :dev},
       {:heroicons,
        github: "tailwindlabs/heroicons",
@@ -73,7 +73,8 @@ defmodule AshSvelteApp.MixProject do
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
       {:ash_typescript, "~> 0.1.0"},
-      {:ash_admin, "~> 0.13"}
+      {:ash_admin, "~> 0.13"},
+      {:live_svelte, "~> 0.16.0"}
     ]
   end
 
@@ -85,15 +86,22 @@ defmodule AshSvelteApp.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "ash.setup", "assets.setup", "assets.build", "run priv/repo/seeds.exs"],
+      setup: [
+        "deps.get",
+        "ash.setup",
+        "assets.setup",
+        "assets.build",
+        "run priv/repo/seeds.exs",
+        "cmd --cd assets npm install"
+      ],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ash.setup --quiet", "test"],
-      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["compile", "tailwind ash_svelte_app", "esbuild ash_svelte_app"],
+      "assets.setup": ["tailwind.install --if-missing"],
+      "assets.build": ["compile", "tailwind ash_svelte_app"],
       "assets.deploy": [
         "tailwind ash_svelte_app --minify",
-        "esbuild ash_svelte_app --minify",
+        "cmd --cd assets node build.js --deploy",
         "phx.digest"
       ],
       precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]

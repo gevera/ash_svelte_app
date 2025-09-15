@@ -26,7 +26,8 @@ config :ash_svelte_app, AshSvelteAppWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "aXlVYKruGOLa8IwKH7mlRez0dYhpklUwwDBh0LFQap9iYgSGRqZHBqDWIjF6ufx3",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:ash_svelte_app, ~w(--sourcemap=inline --watch)]},
+    node: ["build.js", "--watch", cd: Path.expand("../assets", __DIR__)],
+    # esbuild: {Esbuild, :install_and_run, [:ash_svelte_app, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:ash_svelte_app, ~w(--watch)]}
   ]
 

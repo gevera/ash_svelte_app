@@ -82,6 +82,8 @@ defmodule AshSvelteAppWeb do
       # Translation
       use Gettext, backend: AshSvelteAppWeb.Gettext
 
+      import LiveSvelte
+
       # HTML escaping functionality
       import Phoenix.HTML
       # Core UI components
