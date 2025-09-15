@@ -3,8 +3,8 @@ config :ash, policies: [show_policy_breakdowns?: true]
 
 # Configure your database
 config :ash_svelte_app, AshSvelteApp.Repo,
-  username: "postgres",
-  password: "postgres",
+  username: System.get_env("POSTGRES_USER") || "postgres",
+  password: System.get_env("POSTGRES_PASSWORD") || "postgres",
   hostname: "localhost",
   database: "ash_svelte_app_dev",
   stacktrace: true,

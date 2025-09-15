@@ -35,3 +35,6 @@ ash_svelte_app-*.tar
 npm-debug.log
 /assets/node_modules/
 
+.env
+
+.expert
