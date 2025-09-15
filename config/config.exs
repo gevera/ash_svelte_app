@@ -23,6 +23,8 @@ config :spark,
     remove_parens?: true,
     "Ash.Resource": [
       section_order: [
+        :admin,
+        :postgres,
         :resource,
         :code_interface,
         :actions,
@@ -39,12 +41,16 @@ config :spark,
         :identities
       ]
     ],
-    "Ash.Domain": [section_order: [:resources, :policies, :authorization, :domain, :execution]]
+    "Ash.Domain": [
+      section_order: [:admin, :resources, :policies, :authorization, :domain, :execution]
+    ]
   ]
 
 config :ash_svelte_app,
   ecto_repos: [AshSvelteApp.Repo],
   generators: [timestamp_type: :utc_datetime]
+
+config :ash_svelte_app, :ash_domains, [AshSvelteApp.Library]
 
 # Configures the endpoint
 config :ash_svelte_app, AshSvelteAppWeb.Endpoint,

@@ -20,6 +20,14 @@ defmodule AshSvelteAppWeb.Router do
     get "/", PageController, :home
   end
 
+  scope "/rpc", AshSvelteAppWeb do
+    # or :browser if using session-based auth
+    pipe_through :api
+
+    post "/run", RpcController, :run
+    post "/validate", RpcController, :validate
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", AshSvelteAppWeb do
   #   pipe_through :api
@@ -39,6 +47,16 @@ defmodule AshSvelteAppWeb.Router do
 
       live_dashboard "/dashboard", metrics: AshSvelteAppWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
+    end
+  end
+
+  if Application.compile_env(:ash_svelte_app, :dev_routes) do
+    import AshAdmin.Router
+
+    scope "/admin" do
+      pipe_through :browser
+
+      ash_admin "/"
     end
   end
 end
