@@ -31,6 +31,7 @@ defmodule AshSvelteAppWeb.Router do
 
     get "/", PageController, :home
     live "/library", Live.BooksLibrary
+    live "/books", Live.BooksLive
   end
 
   scope "/rpc", AshSvelteAppWeb do

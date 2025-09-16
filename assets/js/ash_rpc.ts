@@ -10,8 +10,8 @@ export type AshSvelteAppLibraryBookResourceSchema = {
   __type: "Resource";
   __primitiveFields: "id" | "title" | "author" | "isbn";
   id: UUID;
-  title: string | null;
-  author: string | null;
+  title: string;
+  author: string;
   isbn: string | null;
 };
 
@@ -366,8 +366,8 @@ export async function validateRead(
 
 
 export type CreateInput = {
-  title?: string | null;
-  author?: string | null;
+  title: string;
+  author: string;
   isbn?: string | null;
 };
 
