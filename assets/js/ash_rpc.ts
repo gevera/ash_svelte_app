@@ -3,7 +3,7 @@
 
 
 
-type UUID = string;
+export type UUID = string;
 
 // AshSvelteAppLibraryBook Schema
 export type AshSvelteAppLibraryBookResourceSchema = {
@@ -276,6 +276,8 @@ export async function read<Fields extends ReadFields>(
     }
   );
   headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
 ): Promise<ReadResult<Fields>> {
   const payload = {
@@ -288,11 +290,15 @@ export async function read<Fields extends ReadFields>(
     ...config.headers,
   };
 
-  const response = await fetch("/rpc/run", {
+  const fetchFunction = config.customFetch || fetch;
+  const fetchOptions: RequestInit = {
+    ...config.fetchOptions,
     method: "POST",
     headers,
     body: JSON.stringify(payload),
-  });
+  };
+
+  const response = await fetchFunction("/rpc/run", fetchOptions);
 
   if (!response.ok) {
     return {
@@ -323,6 +329,8 @@ export type ValidateReadResult =
 export async function validateRead(
   config: {
   headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
 ): Promise<ValidateReadResult> {
   const payload = {
@@ -335,11 +343,15 @@ export async function validateRead(
     ...config.headers,
   };
 
-  const response = await fetch("/rpc/validate", {
+  const fetchFunction = config.customFetch || fetch;
+  const fetchOptions: RequestInit = {
+    ...config.fetchOptions,
     method: "POST",
     headers,
     body: JSON.stringify(payload),
-  });
+  };
+
+  const response = await fetchFunction("/rpc/validate", fetchOptions);
 
   if (!response.ok) {
     return {
@@ -352,6 +364,18 @@ export async function validateRead(
   return result as ValidateReadResult;
 }
 
+
+export type CreateInput = {
+  title?: string | null;
+  author?: string | null;
+  isbn?: string | null;
+};
+
+export type CreateValidationErrors = {
+  title?: string[];
+  author?: string[];
+  isbn?: string[];
+};
 
 export type CreateFields = UnifiedFieldSelection<AshSvelteAppLibraryBookResourceSchema>[];
 
@@ -373,8 +397,11 @@ export type CreateResult<Fields extends CreateFields> = | { success: true; data:
 
 export async function create<Fields extends CreateFields>(
   config: {
+  input: CreateInput;
   fields: Fields;
   headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
 ): Promise<CreateResult<Fields>> {
   const payload = {
@@ -387,11 +414,15 @@ export async function create<Fields extends CreateFields>(
     ...config.headers,
   };
 
-  const response = await fetch("/rpc/run", {
+  const fetchFunction = config.customFetch || fetch;
+  const fetchOptions: RequestInit = {
+    ...config.fetchOptions,
     method: "POST",
     headers,
     body: JSON.stringify(payload),
-  });
+  };
+
+  const response = await fetchFunction("/rpc/run", fetchOptions);
 
   if (!response.ok) {
     return {
@@ -421,7 +452,10 @@ export type ValidateCreateResult =
 
 export async function validateCreate(
   config: {
+  input: CreateInput;
   headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
 ): Promise<ValidateCreateResult> {
   const payload = {
@@ -434,11 +468,15 @@ export async function validateCreate(
     ...config.headers,
   };
 
-  const response = await fetch("/rpc/validate", {
+  const fetchFunction = config.customFetch || fetch;
+  const fetchOptions: RequestInit = {
+    ...config.fetchOptions,
     method: "POST",
     headers,
     body: JSON.stringify(payload),
-  });
+  };
+
+  const response = await fetchFunction("/rpc/validate", fetchOptions);
 
   if (!response.ok) {
     return {

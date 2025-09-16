@@ -3,10 +3,10 @@ defmodule AshSvelteAppWeb.Live.BooksLibrary do
   alias AshSvelteApp.Library.Book
 
   def render(assigns) do
-      ~H"""
+    ~H"""
       <.svelte name="Library" props={%{books: @books}} socket={@socket} />
-      """
-    end
+    """
+  end
 
     def mount(_params, _session, socket) do
       with {:ok, books} <- Ash.read(Book) do

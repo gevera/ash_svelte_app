@@ -14,6 +14,18 @@ defmodule AshSvelteAppWeb.Router do
     plug :accepts, ["json"]
   end
 
+  scope "/mcp" do
+    forward "/", AshAi.Mcp.Router,
+      tools: [
+        # list your tools here
+        # :tool1,
+        # :tool2,
+        # For many tools, you will need to set the `protocol_version_statement` to the older version.
+      ],
+      protocol_version_statement: "2024-11-05",
+      otp_app: :ash_svelte_app
+  end
+
   scope "/", AshSvelteAppWeb do
     pipe_through :browser
 

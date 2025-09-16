@@ -72,9 +72,10 @@ defmodule AshSvelteApp.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
-      {:ash_typescript, "~> 0.1.0"},
+      {:ash_typescript, "~> 0.1.2"},
       {:ash_admin, "~> 0.13"},
-      {:live_svelte, "~> 0.16.0"}
+      {:live_svelte, "~> 0.16.0"},
+      {:ash_ai, "~> 0.2"}
     ]
   end
 
