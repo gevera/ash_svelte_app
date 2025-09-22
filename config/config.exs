@@ -46,6 +46,42 @@ config :spark,
     ]
   ]
 
+  # config/config.exs
+  config :ash_typescript,
+    # File generation
+    output_file: "assets/js/ash_rpc.ts",
+
+    # RPC endpoints
+    run_endpoint: "/rpc/run",
+    validate_endpoint: "/rpc/validate",
+
+    # Field formatting
+    input_field_formatter: :camel_case,
+    output_field_formatter: :camel_case,
+
+    # Multitenancy
+    require_tenant_parameters: false,
+
+    # Zod schema generation
+    generate_zod_schemas: true,
+    zod_import_path: "zod",
+    zod_schema_suffix: "ZodSchema",
+
+    # Validation functions
+    generate_validation_functions: true,
+
+    # Phoenix channel-based RPC actions
+    generate_phx_channel_rpc_actions: false,
+    phoenix_import_path: "phoenix",
+
+    # Custom type imports
+    import_into_generated: [
+      %{
+        import_name: "CustomTypes",
+        file: "./customTypes"
+      }
+    ]
+
 config :ash_svelte_app,
   ecto_repos: [AshSvelteApp.Repo],
   generators: [timestamp_type: :utc_datetime]
