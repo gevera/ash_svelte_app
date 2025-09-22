@@ -7,7 +7,10 @@ defmodule AshSvelteAppWeb.Live.BooksLive do
     <Layouts.app flash={@flash}>
       <div class="container mx-auto px-4 py-8">
         <div class="mb-8">
-          <h1 class="text-3xl font-bold text-base-content mb-2">Books Library</h1>
+        <.form>
+          <input class="text-3xl font-bold text-base-content mb-2" contenteditable="true"
+          phx-change="handle_heading_change" phx-debounce={300} value={@title} name="heading" />
+         </.form>
           <p class="text-base-content/70">Browse and manage your book collection</p>
         </div>
 
@@ -124,12 +127,33 @@ defmodule AshSvelteAppWeb.Live.BooksLive do
     """
   end
 
+  def handle_event("handle_heading_change", %{"heading" => title}, socket) do
+    IO.inspect("HANDLE HEADING CHANGE")
+    IO.inspect(title)
+    socket = assign(socket, title: title)
+    Phoenix.PubSub.broadcast(AshSvelteApp.PubSub, "books", {:update_title, title})
+    {:noreply, socket}
+  end
+
+  def handle_info({:update_title, title}, socket) do
+    IO.inspect("UPDATE TITLE")
+    IO.inspect(title)
+    {:noreply, assign(socket, title: title)}
+  end
+
   def mount(_params, _session, socket) do
-    with {:ok, books} <- Ash.read(Book) do
-      derived_books = Enum.map(books, &Map.take(&1, [:id, :title, :author, :isbn]))
-      {:ok, assign(socket, :books, derived_books)}
+    title = "Books Library"
+    books = with {:ok, books} <- Ash.read(Book) do
+      Enum.map(books, &Map.take(&1, [:id, :title, :author, :isbn]))
+      # {:ok, assign(socket, books: derived_books, title: title)}
     else
-      {:error, _} -> {:ok, assign(socket, :books, [])}
+      # {:error, _} -> {:ok, assign(socket, books: [], title: title)}
+      {:error, _} -> []
     end
+    socket = assign(socket, books: books, title: title)
+    if connected?(socket)do
+       Phoenix.PubSub.subscribe(AshSvelteApp.PubSub, "books")
+    end
+    {:ok, socket}
   end
 end

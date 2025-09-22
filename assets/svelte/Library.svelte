@@ -6,12 +6,12 @@
   });
 </script>
 
-<section class="container flex flex-col items-center justify-center">
+<section class="container bg-slate-50 border flex flex-col items-center justify-center">
   <h1 class="text-center text-2xl font-semibold">Library</h1>
   {#if books.length}
     <ul class="list">
       {#each books as book}
-        <li>{book.title}</li>
+        <li id={book.id}>{book.title}</li>
       {/each}
     </ul>
   {/if}

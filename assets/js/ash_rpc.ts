@@ -282,7 +282,10 @@ export async function read<Fields extends ReadFields>(
 ): Promise<ReadResult<Fields>> {
   const payload = {
     action: "read",
-    ...config
+    fields: config.fields,
+    ...(config.filter && { filter: config.filter }),
+    ...(config.sort && { sort: config.sort }),
+    ...(config.page && { page: config.page })
   };
 
   const headers: Record<string, string> = {
@@ -334,8 +337,7 @@ export async function validateRead(
 }
 ): Promise<ValidateReadResult> {
   const payload = {
-    action: "read",
-    ...config
+    action: "read"
   };
 
   const headers: Record<string, string> = {
@@ -406,7 +408,8 @@ export async function create<Fields extends CreateFields>(
 ): Promise<CreateResult<Fields>> {
   const payload = {
     action: "create",
-    ...config
+    input: config.input,
+    fields: config.fields
   };
 
   const headers: Record<string, string> = {
@@ -460,7 +463,7 @@ export async function validateCreate(
 ): Promise<ValidateCreateResult> {
   const payload = {
     action: "create",
-    ...config
+    input: config.input
   };
 
   const headers: Record<string, string> = {
