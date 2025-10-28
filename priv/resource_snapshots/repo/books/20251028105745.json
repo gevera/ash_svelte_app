@@ -47,6 +47,30 @@
       "size": null,
       "source": "isbn",
       "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "inserted_at",
+      "type": "utc_datetime_usec"
+    },
+    {
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "updated_at",
+      "type": "utc_datetime_usec"
     }
   ],
   "base_filter": null,
@@ -54,7 +78,7 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "472D4702A5641483BF14EE612AA47A52D0DD33C9D6BE1DAC098DEBBCAECD9F8E",
+  "hash": "D8E4C4A9F2B83DE28009360C6B5BEEB477665BA32249216EDAF39D4FD21D4EEA",
   "identities": [],
   "multitenancy": {
     "attribute": null,

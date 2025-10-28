@@ -7,8 +7,9 @@ defmodule AshSvelteApp.Library do
 
   typescript_rpc do
     resource AshSvelteApp.Library.Book do
-      rpc_action(:read, :read)
-      rpc_action(:create, :create)
+      rpc_action(:get_all, :read)
+      rpc_action(:add, :create)
+      rpc_action(:remove, :destroy)
     end
   end
 

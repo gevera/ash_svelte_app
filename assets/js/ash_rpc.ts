@@ -329,12 +329,12 @@ export function buildCSRFHeaders(headers: Record<string, string> = {}): Record<s
 
 
 
-export type ReadFields = UnifiedFieldSelection<BookResourceSchema>[];
+export type GetAllFields = UnifiedFieldSelection<BookResourceSchema>[];
 
 
-type InferReadResult<
-  Fields extends ReadFields,
-  Page extends ReadConfig["page"] = undefined
+type InferGetAllResult<
+  Fields extends GetAllFields,
+  Page extends GetAllConfig["page"] = undefined
 > = ConditionalPaginatedResultMixed<Page, Array<InferResult<BookResourceSchema, Fields>>, {
   results: Array<InferResult<BookResourceSchema, Fields>>;
   hasMore: boolean;
@@ -354,8 +354,8 @@ type InferReadResult<
   type: "keyset";
 }>;
 
-export type ReadConfig = {
-  fields: ReadFields;
+export type GetAllConfig = {
+  fields: GetAllFields;
   filter?: BookFilterInput;
   sort?: string;
   page?: (
@@ -374,7 +374,7 @@ export type ReadConfig = {
   customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 };
 
-export type ReadResult<Fields extends ReadFields, Page extends ReadConfig["page"] = undefined> = | { success: true; data: InferReadResult<Fields, Page>; }
+export type GetAllResult<Fields extends GetAllFields, Page extends GetAllConfig["page"] = undefined> = | { success: true; data: InferGetAllResult<Fields, Page>; }
 | {
     success: false;
     errors: Array<{
@@ -386,13 +386,13 @@ export type ReadResult<Fields extends ReadFields, Page extends ReadConfig["page"
   }
 ;
 
-export async function read<Fields extends ReadFields, Config extends ReadConfig>(
+export async function getAll<Fields extends GetAllFields, Config extends GetAllConfig>(
   config: Config & { fields: Fields }
-): Promise<ReadResult<Fields, Config["page"]>> {
+): Promise<GetAllResult<Fields, Config["page"]>> {
   let processedConfig = config;
 
   const payload = {
-    action: "read",
+    action: "get_all",
     fields: config.fields,
     ...(config.filter && { filter: config.filter }),
     ...(config.sort && { sort: config.sort }),
@@ -427,11 +427,11 @@ export async function read<Fields extends ReadFields, Config extends ReadConfig>
     };
   }
 
-  return result as ReadResult<Fields, Config["page"]>;
+  return result as GetAllResult<Fields, Config["page"]>;
 }
 
 
-export type ValidateReadResult =
+export type ValidateGetAllResult =
   | { success: true }
   | {
       success: false;
@@ -445,17 +445,17 @@ export type ValidateReadResult =
     };
 
 
-export async function validateRead(
+export async function validateGetAll(
   config: {
   headers?: Record<string, string>;
   fetchOptions?: RequestInit;
   customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
-): Promise<ValidateReadResult> {
+): Promise<ValidateGetAllResult> {
   let processedConfig = config;
 
   const payload = {
-    action: "read"
+    action: "get_all"
   };
 
   const headers: Record<string, string> = {
@@ -486,35 +486,35 @@ export async function validateRead(
     };
   }
 
-  return result as ValidateReadResult;
+  return result as ValidateGetAllResult;
 }
 
 
-export type CreateInput = {
+export type AddInput = {
   title: string;
   author: string;
   isbn?: string | null;
 };
 
-export type CreateValidationErrors = {
+export type AddValidationErrors = {
   title?: string[];
   author?: string[];
   isbn?: string[];
 };
 
-export const createZodschema = z.object({
+export const addZodschema = z.object({
   title: z.string().min(1),
   author: z.string().min(1),
   isbn: z.string().optional(),
 });
 
-export type CreateFields = UnifiedFieldSelection<BookResourceSchema>[];
+export type AddFields = UnifiedFieldSelection<BookResourceSchema>[];
 
-type InferCreateResult<
-  Fields extends CreateFields,
+type InferAddResult<
+  Fields extends AddFields,
 > = InferResult<BookResourceSchema, Fields>;
 
-export type CreateResult<Fields extends CreateFields> = | { success: true; data: InferCreateResult<Fields>; }
+export type AddResult<Fields extends AddFields> = | { success: true; data: InferAddResult<Fields>; }
 | {
     success: false;
     errors: Array<{
@@ -526,19 +526,19 @@ export type CreateResult<Fields extends CreateFields> = | { success: true; data:
   }
 ;
 
-export async function create<Fields extends CreateFields>(
+export async function add<Fields extends AddFields>(
   config: {
-  input: CreateInput;
+  input: AddInput;
   fields: Fields;
   headers?: Record<string, string>;
   fetchOptions?: RequestInit;
   customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
-): Promise<CreateResult<Fields>> {
+): Promise<AddResult<Fields>> {
   let processedConfig = config;
 
   const payload = {
-    action: "create",
+    action: "add",
     input: config.input,
     fields: config.fields
   };
@@ -571,11 +571,11 @@ export async function create<Fields extends CreateFields>(
     };
   }
 
-  return result as CreateResult<Fields>;
+  return result as AddResult<Fields>;
 }
 
 
-export type ValidateCreateResult =
+export type ValidateAddResult =
   | { success: true }
   | {
       success: false;
@@ -589,18 +589,18 @@ export type ValidateCreateResult =
     };
 
 
-export async function validateCreate(
+export async function validateAdd(
   config: {
-  input: CreateInput;
+  input: AddInput;
   headers?: Record<string, string>;
   fetchOptions?: RequestInit;
   customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
-): Promise<ValidateCreateResult> {
+): Promise<ValidateAddResult> {
   let processedConfig = config;
 
   const payload = {
-    action: "create",
+    action: "add",
     input: config.input
   };
 
@@ -632,7 +632,128 @@ export async function validateCreate(
     };
   }
 
-  return result as ValidateCreateResult;
+  return result as ValidateAddResult;
+}
+
+
+
+export type RemoveResult = | { success: true; data: {}; }
+| {
+    success: false;
+    errors: Array<{
+      type: string;
+      message: string;
+      fieldPath?: string;
+      details: Record<string, string>;
+    }>;
+  }
+;
+
+export async function remove(
+  config: {
+  primaryKey: UUID;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<RemoveResult> {
+  let processedConfig = config;
+
+  const payload = {
+    action: "remove",
+    primaryKey: config.primaryKey
+  };
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...processedConfig.headers,
+    ...config.headers,
+  };
+
+  const fetchFunction = config.customFetch || processedConfig.customFetch || fetch;
+  const fetchOptions: RequestInit = {
+    ...processedConfig.fetchOptions,
+    ...config.fetchOptions,
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  };
+
+  const response = await fetchFunction("/rpc/run", fetchOptions);
+
+  const result = response.ok ? await response.json() : null;
+
+  
+
+  if (!response.ok) {
+    return {
+      success: false,
+      errors: [{ type: "network", message: response.statusText, details: {} }],
+    };
+  }
+
+  return result as RemoveResult;
+}
+
+
+export type ValidateRemoveResult =
+  | { success: true }
+  | {
+      success: false;
+      errors: Array<{
+        type: string;
+        message: string;
+        field?: string;
+        fieldPath?: string;
+        details?: Record<string, any>;
+      }>;
+    };
+
+
+export async function validateRemove(
+  config: {
+  primaryKey: string;
+  headers?: Record<string, string>;
+  fetchOptions?: RequestInit;
+  customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+}
+): Promise<ValidateRemoveResult> {
+  let processedConfig = config;
+
+  const payload = {
+    action: "remove",
+    primaryKey: config.primaryKey
+  };
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...processedConfig.headers,
+    ...config.headers,
+  };
+
+  const fetchFunction = config.customFetch || processedConfig.customFetch || fetch;
+  const fetchOptions: RequestInit = {
+    ...processedConfig.fetchOptions,
+    ...config.fetchOptions,
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  };
+
+  const response = await fetchFunction("/rpc/validate", fetchOptions);
+
+  const result = response.ok ? await response.json() : null;
+
+  
+
+  if (!response.ok) {
+    return {
+      success: false,
+      errors: [{ type: "network", message: response.statusText, details: {} }],
+    };
+  }
+
+  return result as ValidateRemoveResult;
 }
 
 

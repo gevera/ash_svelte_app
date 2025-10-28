@@ -1,4 +1,4 @@
-defmodule AshSvelteApp.Repo.Migrations.MigrateResources1 do
+defmodule AshSvelteApp.Repo.Migrations.AddBookTimestamps do
   @moduledoc """
   Updates resources based on their most recent snapshots.
 
@@ -12,11 +12,21 @@ defmodule AshSvelteApp.Repo.Migrations.MigrateResources1 do
       modify :author, :text, null: false
       modify :title, :text, null: false
       modify :id, :uuid
+
+      add :inserted_at, :utc_datetime_usec,
+        null: false,
+        default: fragment("(now() AT TIME ZONE 'utc')")
+
+      add :updated_at, :utc_datetime_usec,
+        null: false,
+        default: fragment("(now() AT TIME ZONE 'utc')")
     end
   end
 
   def down do
     alter table(:books) do
+      remove :updated_at
+      remove :inserted_at
       modify :id, :uuid
       modify :title, :text, null: true
       modify :author, :text, null: true
