@@ -5,7 +5,7 @@ defmodule AshSvelteApp.MixProject do
     [
       app: :ash_svelte_app,
       version: "0.1.0",
-      elixir: "~> 1.15",
+      elixir: "~> 1.19",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -72,10 +72,11 @@ defmodule AshSvelteApp.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
-      {:ash_typescript, "~> 0.3.3"},
+      {:ash_typescript, "~> 0.6"},
       {:ash_admin, "~> 0.13"},
       {:live_svelte, "~> 0.16.0"},
-      {:ash_ai, "~> 0.2"}
+      {:ash_ai, "~> 0.2"},
+      {:live_debugger, "~> 0.4.0", only: :dev}
     ]
   end
 

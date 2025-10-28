@@ -17,7 +17,12 @@ defmodule AshSvelteApp.Library.Book do
 
   use Ash.Resource,
     domain: AshSvelteApp.Library,
-    data_layer: AshPostgres.DataLayer
+    data_layer: AshPostgres.DataLayer,
+    extensions: [AshTypescript.Resource]
+
+    typescript do
+      type_name "Book"
+    end
 
   postgres do
     table "books"
@@ -50,7 +55,8 @@ defmodule AshSvelteApp.Library.Book do
       description: "International Standard Book Number (ISBN) - 10 or 13 digits",
       allow_nil?: true,
       constraints: [
-        match: ~r/^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$/
+        match:
+          ~r/^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$/
       ]
   end
 end

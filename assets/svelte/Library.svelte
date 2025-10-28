@@ -1,19 +1,106 @@
 <script lang="ts">
-  import type { AshSvelteAppLibraryBookResourceSchema as Book } from "../js/ash_rpc";
-  let { books = [] }: { books: Book[] } = $props();
-  $effect(() => {
-    console.log("Books >>>", books);
-  });
+    import type { BookResourceSchema as Book } from "../js/ash_rpc";
+    let { books = [], live }: { books: Book[]; live: any } = $props();
+    let currentSelectedBook: Book | null = $state(null);
+    let deleteBookModal: HTMLDialogElement | null = $state(null);
+    $effect(() => {
+        console.log("Books >>>", books);
+    });
+    const handleSubmit = (e: FormDataEvent) => {
+        e.preventDefault();
+        const formData = new FormData(e.target as HTMLFormElement);
+        const title = formData.get("title") as string;
+        const author = formData.get("author") as string;
+        const isbn = formData.get("isbn") as string;
+        live.pushEvent("ADD_BOOK", {
+            title,
+            author,
+            isbn,
+        });
+    };
+
+    const showDeleteBookModal = (book: Book) => {
+        currentSelectedBook = book;
+        deleteBookModal.showModal();
+    };
+    const handleDelete = () => {
+        if (currentSelectedBook) {
+            live.pushEvent("DELETE_BOOK", { id: currentSelectedBook.id });
+            deleteBookModal.close();
+        }
+    };
+    // live.pushEvent("DELETE_BOOK", { id });
 </script>
 
-<section class="container bg-slate-50 border flex flex-col items-center justify-center">
-  <h1 class="text-center text-2xl font-semibold">Library</h1>
-  {#if books.length}
-    <ul class="list">
-      {#each books as book}
-        <li id={book.id}>{book.title}</li>
-      {/each}
-    </ul>
-  {/if}
-  <pre>{JSON.stringify(books, null, 2)}</pre>
+<section
+    class="bg-slate-50 flex flex-col items-center justify-center mx-auto pp"
+>
+    <h1 class="text-center text-2xl font-semibold">Library</h1>
+    <div class="my-5 w-full max-w-md mx-auto">
+        <form onsubmit={handleSubmit} class="flex flex-col gap-2">
+            <input
+                type="text"
+                name="title"
+                required
+                placeholder="Title"
+                class="input"
+            />
+            <input
+                type="text"
+                name="author"
+                required
+                placeholder="Author"
+                class="input"
+            />
+            <input type="text" name="isbn" placeholder="ISBN" class="input" />
+            <button type="submit" class="btn">Add new book</button>
+        </form>
+    </div>
+    {#if books.length}
+        <ul class="disc">
+            {#each books as book}
+                <li class="text-lg font-semibold" id={book.id}>
+                    {book.title}
+                    <button
+                        class="btn btn-sm btn-ghost btn-secondary"
+                        onclick={() => showDeleteBookModal(book)}>x</button
+                    >
+                </li>
+            {/each}
+        </ul>
+    {/if}
+    <div class="mockup-code w-full">
+        <pre class=""><code>{JSON.stringify(books, null, 2)}</code></pre>
+    </div>
 </section>
+
+<dialog id="delete_book_modal" class="modal" bind:this={deleteBookModal}>
+    <div class="modal-box">
+      <h3 class="text-lg font-bold">Are you sure you want to delete this book?</h3>
+      <p class="py-4">This action cannot be undone.</p>
+      <div class="modal-action flex gap-5 justify-between">
+        <button class="btn btn-primary" onclick={handleDelete}>Delete</button>
+        <button class="btn btn-secondary" onclick={() => deleteBookModal.close()}>Cancel</button>
+      </div>
+    </div>
+  </dialog>
+
+<style>
+    .pp {
+        padding: 1rem;
+    }
+    .mockup-code {
+        overflow-x: auto;
+    }
+    .modal-box {
+        background-color: var(--color-base-100);
+        color: var(--color-base-content);
+        border: 1px solid var(--color-base-300);
+        border-radius: var(--radius-box);
+        padding: 1rem;
+        box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+        max-width: 400px;
+        width: 100%;
+        margin: 0 auto;
+    }
+</style>

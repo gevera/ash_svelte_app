@@ -5,10 +5,12 @@ import { z } from "zod";
 import * as CustomTypes from "./customTypes";
 
 
+
+
 export type UUID = string;
 
-// AshSvelteAppLibraryBook Schema
-export type AshSvelteAppLibraryBookResourceSchema = {
+// Book Schema
+export type BookResourceSchema = {
   __type: "Resource";
   __primitiveFields: "id" | "title" | "author" | "isbn";
   id: UUID;
@@ -25,10 +27,10 @@ export type AshSvelteAppLibraryBookResourceSchema = {
 
 
 
-export type AshSvelteAppLibraryBookFilterInput = {
-  and?: Array<AshSvelteAppLibraryBookFilterInput>;
-  or?: Array<AshSvelteAppLibraryBookFilterInput>;
-  not?: Array<AshSvelteAppLibraryBookFilterInput>;
+export type BookFilterInput = {
+  and?: Array<BookFilterInput>;
+  or?: Array<BookFilterInput>;
+  not?: Array<BookFilterInput>;
 
   id?: {
     eq?: UUID;
@@ -74,6 +76,30 @@ type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
   ? I
   : never;
 
+// Helper type to infer union field values, avoiding duplication between array and non-array unions
+type InferUnionFieldValue<
+  UnionSchema extends { __type: "Union"; __primitiveFields: any },
+  FieldSelection extends any[],
+> = UnionToIntersection<
+  {
+    [FieldIndex in keyof FieldSelection]: FieldSelection[FieldIndex] extends UnionSchema["__primitiveFields"]
+      ? FieldSelection[FieldIndex] extends keyof UnionSchema
+        ? { [P in FieldSelection[FieldIndex]]: UnionSchema[FieldSelection[FieldIndex]] }
+        : never
+      : FieldSelection[FieldIndex] extends Record<string, any>
+        ? {
+            [UnionKey in keyof FieldSelection[FieldIndex]]: UnionKey extends keyof UnionSchema
+              ? UnionSchema[UnionKey] extends { __type: "TypedMap"; __primitiveFields: any }
+                ? UnionSchema[UnionKey]
+                : UnionSchema[UnionKey] extends TypedSchema
+                  ? InferResult<UnionSchema[UnionKey], FieldSelection[FieldIndex][UnionKey]>
+                  : never
+              : never;
+          }
+        : never;
+  }[number]
+>;
+
 type HasComplexFields<T extends TypedSchema> = keyof Omit<
   T,
   "__primitiveFields" | "__type" | T["__primitiveFields"]
@@ -110,9 +136,25 @@ type ComplexFieldSelection<T extends TypedSchema> = {
         : NonNullable<ReturnType> extends TypedSchema
           ? { fields: UnifiedFieldSelection<NonNullable<ReturnType>>[] }
           : never
-      : NonNullable<T[K]> extends TypedSchema
-        ? UnifiedFieldSelection<NonNullable<T[K]>>[]
-        : never;
+      : T[K] extends { __type: "Union"; __primitiveFields: infer PrimitiveFields }
+        ? T[K] extends { __array: true }
+          ? (PrimitiveFields | {
+              [UnionKey in keyof Omit<T[K], "__type" | "__primitiveFields" | "__array">]?: T[K][UnionKey] extends { __type: "TypedMap"; __primitiveFields: any }
+                ? T[K][UnionKey]["__primitiveFields"][]
+                : T[K][UnionKey] extends TypedSchema
+                  ? UnifiedFieldSelection<T[K][UnionKey]>[]
+                  : never;
+            })[]
+          : (PrimitiveFields | {
+              [UnionKey in keyof Omit<T[K], "__type" | "__primitiveFields">]?: T[K][UnionKey] extends { __type: "TypedMap"; __primitiveFields: any }
+                ? T[K][UnionKey]["__primitiveFields"][]
+                : T[K][UnionKey] extends TypedSchema
+                  ? UnifiedFieldSelection<T[K][UnionKey]>[]
+                  : never;
+            })[]
+          : NonNullable<T[K]> extends TypedSchema
+            ? UnifiedFieldSelection<NonNullable<T[K]>>[]
+            : never;
 };
 
 // Main type: Use explicit base case detection to prevent infinite recursion
@@ -151,11 +193,27 @@ type InferFieldValue<
                 ? InferResult<NonNullable<ReturnType>, Field[K]["fields"]> | null
                 : InferResult<NonNullable<ReturnType>, Field[K]["fields"]>
               : ReturnType
-            : NonNullable<T[K]> extends TypedSchema
-              ? null extends T[K]
-                ? InferResult<NonNullable<T[K]>, Field[K]> | null
-                : InferResult<NonNullable<T[K]>, Field[K]>
-              : never
+            : T[K] extends { __type: "Union"; __primitiveFields: any }
+              ? T[K] extends { __array: true }
+                ? {
+                    [CurrentK in K]: T[CurrentK] extends { __type: "Union"; __primitiveFields: any }
+                      ? Field[CurrentK] extends any[]
+                        ? Array<InferUnionFieldValue<T[CurrentK], Field[CurrentK]>> | null
+                        : never
+                      : never
+                  }
+                : {
+                    [CurrentK in K]: T[CurrentK] extends { __type: "Union"; __primitiveFields: any }
+                      ? Field[CurrentK] extends any[]
+                        ? InferUnionFieldValue<T[CurrentK], Field[CurrentK]> | null
+                        : never
+                      : never
+                  }
+                : NonNullable<T[K]> extends TypedSchema
+                  ? null extends T[K]
+                    ? InferResult<NonNullable<T[K]>, Field[K]> | null
+                    : InferResult<NonNullable<T[K]>, Field[K]>
+                  : never
           : never;
       }
     : never;
@@ -168,6 +226,51 @@ type InferResult<
     [K in keyof SelectedFields]: InferFieldValue<T, SelectedFields[K]>;
   }[number]
 >;
+
+// Pagination conditional types
+// Checks if a page configuration object has any pagination parameters
+type HasPaginationParams<Page> =
+  Page extends { offset: any } ? true :
+  Page extends { after: any } ? true :
+  Page extends { before: any } ? true :
+  false;
+
+// Infer which pagination type is being used from the page config
+type InferPaginationType<Page> =
+  Page extends { offset: any } ? "offset" :
+  Page extends { after: any } | { before: any } ? "keyset" :
+  never;
+
+// Returns either non-paginated (array) or paginated result based on page params
+// For single pagination type support (offset-only or keyset-only)
+// @ts-ignore
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type ConditionalPaginatedResult<
+  Page,
+  RecordType,
+  PaginatedType
+> = Page extends undefined
+  ? RecordType
+  : HasPaginationParams<Page> extends true
+    ? PaginatedType
+    : RecordType;
+
+// For actions supporting both offset and keyset pagination
+// Infers the specific pagination type based on which params were passed
+type ConditionalPaginatedResultMixed<
+  Page,
+  RecordType,
+  OffsetType,
+  KeysetType
+> = Page extends undefined
+  ? RecordType
+  : HasPaginationParams<Page> extends true
+    ? InferPaginationType<Page> extends "offset"
+      ? OffsetType
+      : InferPaginationType<Page> extends "keyset"
+        ? KeysetType
+        : OffsetType | KeysetType  // Fallback to union if can't determine
+    : RecordType;
 
 export type SuccessDataFunc<T extends (...args: any[]) => Promise<any>> = Extract<
   Awaited<ReturnType<T>>,
@@ -226,19 +329,21 @@ export function buildCSRFHeaders(headers: Record<string, string> = {}): Record<s
 
 
 
-export type ReadFields = UnifiedFieldSelection<AshSvelteAppLibraryBookResourceSchema>[];
+export type ReadFields = UnifiedFieldSelection<BookResourceSchema>[];
+
 
 type InferReadResult<
   Fields extends ReadFields,
-> = {
-  results: Array<InferResult<AshSvelteAppLibraryBookResourceSchema, Fields>>;
+  Page extends ReadConfig["page"] = undefined
+> = ConditionalPaginatedResultMixed<Page, Array<InferResult<BookResourceSchema, Fields>>, {
+  results: Array<InferResult<BookResourceSchema, Fields>>;
   hasMore: boolean;
   limit: number;
   offset: number;
   count?: number | null;
   type: "offset";
-} | {
-  results: Array<InferResult<AshSvelteAppLibraryBookResourceSchema, Fields>>;
+}, {
+  results: Array<InferResult<BookResourceSchema, Fields>>;
   hasMore: boolean;
   limit: number;
   after: string | null;
@@ -247,24 +352,11 @@ type InferReadResult<
   nextPage: string;
   count?: number | null;
   type: "keyset";
-};
+}>;
 
-export type ReadResult<Fields extends ReadFields> = | { success: true; data: InferReadResult<Fields> }
-| {
-    success: false;
-    errors: Array<{
-      type: string;
-      message: string;
-      fieldPath?: string;
-      details: Record<string, string>;
-    }>;
-  }
-;
-
-export async function read<Fields extends ReadFields>(
-  config: {
-  fields: Fields;
-  filter?: AshSvelteAppLibraryBookFilterInput;
+export type ReadConfig = {
+  fields: ReadFields;
+  filter?: BookFilterInput;
   sort?: string;
   page?: (
     {
@@ -280,8 +372,25 @@ export async function read<Fields extends ReadFields>(
   headers?: Record<string, string>;
   fetchOptions?: RequestInit;
   customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
-}
-): Promise<ReadResult<Fields>> {
+};
+
+export type ReadResult<Fields extends ReadFields, Page extends ReadConfig["page"] = undefined> = | { success: true; data: InferReadResult<Fields, Page>; }
+| {
+    success: false;
+    errors: Array<{
+      type: string;
+      message: string;
+      fieldPath?: string;
+      details: Record<string, string>;
+    }>;
+  }
+;
+
+export async function read<Fields extends ReadFields, Config extends ReadConfig>(
+  config: Config & { fields: Fields }
+): Promise<ReadResult<Fields, Config["page"]>> {
+  let processedConfig = config;
+
   const payload = {
     action: "read",
     fields: config.fields,
@@ -292,11 +401,13 @@ export async function read<Fields extends ReadFields>(
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...processedConfig.headers,
     ...config.headers,
   };
 
-  const fetchFunction = config.customFetch || fetch;
+  const fetchFunction = config.customFetch || processedConfig.customFetch || fetch;
   const fetchOptions: RequestInit = {
+    ...processedConfig.fetchOptions,
     ...config.fetchOptions,
     method: "POST",
     headers,
@@ -305,6 +416,10 @@ export async function read<Fields extends ReadFields>(
 
   const response = await fetchFunction("/rpc/run", fetchOptions);
 
+  const result = response.ok ? await response.json() : null;
+
+  
+
   if (!response.ok) {
     return {
       success: false,
@@ -312,8 +427,7 @@ export async function read<Fields extends ReadFields>(
     };
   }
 
-  const result = await response.json();
-  return result as ReadResult<Fields>;
+  return result as ReadResult<Fields, Config["page"]>;
 }
 
 
@@ -338,17 +452,21 @@ export async function validateRead(
   customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
 ): Promise<ValidateReadResult> {
+  let processedConfig = config;
+
   const payload = {
     action: "read"
   };
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...processedConfig.headers,
     ...config.headers,
   };
 
-  const fetchFunction = config.customFetch || fetch;
+  const fetchFunction = config.customFetch || processedConfig.customFetch || fetch;
   const fetchOptions: RequestInit = {
+    ...processedConfig.fetchOptions,
     ...config.fetchOptions,
     method: "POST",
     headers,
@@ -357,14 +475,17 @@ export async function validateRead(
 
   const response = await fetchFunction("/rpc/validate", fetchOptions);
 
+  const result = response.ok ? await response.json() : null;
+
+  
+
   if (!response.ok) {
     return {
       success: false,
-      errors: [{ type: "network", message: response.statusText }],
+      errors: [{ type: "network", message: response.statusText, details: {} }],
     };
   }
 
-  const result = await response.json();
   return result as ValidateReadResult;
 }
 
@@ -387,13 +508,13 @@ export const createZodschema = z.object({
   isbn: z.string().optional(),
 });
 
-export type CreateFields = UnifiedFieldSelection<AshSvelteAppLibraryBookResourceSchema>[];
+export type CreateFields = UnifiedFieldSelection<BookResourceSchema>[];
 
 type InferCreateResult<
   Fields extends CreateFields,
-> = InferResult<AshSvelteAppLibraryBookResourceSchema, Fields>;
+> = InferResult<BookResourceSchema, Fields>;
 
-export type CreateResult<Fields extends CreateFields> = | { success: true; data: InferCreateResult<Fields> }
+export type CreateResult<Fields extends CreateFields> = | { success: true; data: InferCreateResult<Fields>; }
 | {
     success: false;
     errors: Array<{
@@ -414,6 +535,8 @@ export async function create<Fields extends CreateFields>(
   customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
 ): Promise<CreateResult<Fields>> {
+  let processedConfig = config;
+
   const payload = {
     action: "create",
     input: config.input,
@@ -422,11 +545,13 @@ export async function create<Fields extends CreateFields>(
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...processedConfig.headers,
     ...config.headers,
   };
 
-  const fetchFunction = config.customFetch || fetch;
+  const fetchFunction = config.customFetch || processedConfig.customFetch || fetch;
   const fetchOptions: RequestInit = {
+    ...processedConfig.fetchOptions,
     ...config.fetchOptions,
     method: "POST",
     headers,
@@ -435,6 +560,10 @@ export async function create<Fields extends CreateFields>(
 
   const response = await fetchFunction("/rpc/run", fetchOptions);
 
+  const result = response.ok ? await response.json() : null;
+
+  
+
   if (!response.ok) {
     return {
       success: false,
@@ -442,7 +571,6 @@ export async function create<Fields extends CreateFields>(
     };
   }
 
-  const result = await response.json();
   return result as CreateResult<Fields>;
 }
 
@@ -469,6 +597,8 @@ export async function validateCreate(
   customFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
 ): Promise<ValidateCreateResult> {
+  let processedConfig = config;
+
   const payload = {
     action: "create",
     input: config.input
@@ -476,11 +606,13 @@ export async function validateCreate(
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...processedConfig.headers,
     ...config.headers,
   };
 
-  const fetchFunction = config.customFetch || fetch;
+  const fetchFunction = config.customFetch || processedConfig.customFetch || fetch;
   const fetchOptions: RequestInit = {
+    ...processedConfig.fetchOptions,
     ...config.fetchOptions,
     method: "POST",
     headers,
@@ -489,14 +621,17 @@ export async function validateCreate(
 
   const response = await fetchFunction("/rpc/validate", fetchOptions);
 
+  const result = response.ok ? await response.json() : null;
+
+  
+
   if (!response.ok) {
     return {
       success: false,
-      errors: [{ type: "network", message: response.statusText }],
+      errors: [{ type: "network", message: response.statusText, details: {} }],
     };
   }
 
-  const result = await response.json();
   return result as ValidateCreateResult;
 }
 
