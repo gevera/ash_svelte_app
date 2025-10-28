@@ -4,15 +4,15 @@ defmodule AshSvelteAppWeb.Live.BooksLibrary do
 
   # TODO: Add timestamp to the books
   # TODO: Sort books by latest added
-  # TODO: Show a modal on delete for confirmation
   # TODO: Clean up form on successful add
   # TODO: Show error messages on failed input field validation
-  # TODO: Show alert on successful add
-  # TODO: Show alert on successful delete
+
 
   def render(assigns) do
     ~H"""
-    <.svelte name="Library" props={%{books: @books}} socket={@socket} />
+    <Layouts.app flash={@flash}>
+      <.svelte name="Library" props={%{books: @books}} socket={@socket} />
+    </Layouts.app>
     """
   end
 
@@ -28,18 +28,22 @@ defmodule AshSvelteAppWeb.Live.BooksLibrary do
     with {:ok, book} <- Ash.get(Book, id),
          :ok <- Ash.destroy(book) do
       books = Enum.reject(socket.assigns.books, &(&1.id == id))
-      {:noreply, assign(socket, :books, books)}
+
+      {:noreply,
+       socket
+       |> assign(:books, books)
+       |> put_flash(:info, "Book deleted successfully")}
     else
-      {:error, _} -> {:noreply, assign(socket, :books, socket.assigns.books)}
+      {:error, _} -> {:noreply, assign(socket, :books, socket.assigns.books) |> put_flash(:error, "Failed to delete book")}
     end
   end
 
   def handle_event("ADD_BOOK", %{"title" => title, "author" => author, "isbn" => isbn}, socket) do
     with {:ok, new_book} <- Ash.create(Book, %{title: title, author: author, isbn: isbn}) do
       books = [derive_book(new_book) | socket.assigns.books]
-      {:noreply, assign(socket, :books, books)}
+      {:noreply, assign(socket, :books, books) |> put_flash(:info, "Book added successfully")}
     else
-      {:error, _} -> {:noreply, assign(socket, :books, socket.assigns.books)}
+      {:error, _} -> {:noreply, assign(socket, :books, socket.assigns.books) |> put_flash(:error, "Failed to add book")}
     end
   end
 
