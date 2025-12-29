@@ -6,9 +6,9 @@
   $effect(() => {
     console.log("Books >>>", books);
   });
-  const handleSubmit = (e: FormDataEvent) => {
+  const handleSubmit = (e: SubmitEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
     const title = formData.get("title") as string;
     const author = formData.get("author") as string;
     const isbn = formData.get("isbn") as string;
@@ -81,7 +81,7 @@
   {/await}
 </section>
 
-<dialog id="delete_book_modal" class="modal" bind:this={deleteBookModal}>
+<dialog id="delete_book_modal" class="modal modal-middle" bind:this={deleteBookModal}>
   <div class="modal-box">
     <h3 class="text-lg font-bold">
       Are you sure you want to delete this book?
@@ -94,4 +94,7 @@
       >
     </div>
   </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
 </dialog>

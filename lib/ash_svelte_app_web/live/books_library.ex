@@ -17,21 +17,30 @@ defmodule AshSvelteAppWeb.Live.BooksLibrary do
   end
 
   def mount(_params, _session, socket) do
-    with {:ok, books} <- Ash.read(Book) do
-      {:ok, assign(socket, :books, derive_books(books))}
-    else
-      {:error, _} -> {:ok, assign(socket, :books, [])}
+    books =
+      with {:ok, books} <- Ash.read(Book) do
+        derive_books(books)
+      else
+        {:error, _} -> []
+      end
+
+    socket = assign(socket, :books, books)
+
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(AshSvelteApp.PubSub, "books:library")
     end
+
+    {:ok, socket}
   end
 
   def handle_event("DELETE_BOOK", %{"id" => id}, socket) do
     with {:ok, book} <- Ash.get(Book, id),
          :ok <- Ash.destroy(book) do
-      books = Enum.reject(socket.assigns.books, &(&1.id == id))
+      Phoenix.PubSub.broadcast(AshSvelteApp.PubSub, "books:library", {:book_deleted, id})
 
       {:noreply,
        socket
-       |> assign(:books, books)
+       |> assign(:books, Enum.reject(socket.assigns.books, &(&1.id == id)))
        |> put_flash(:info, "Book deleted successfully")}
     else
       {:error, _} -> {:noreply, assign(socket, :books, socket.assigns.books) |> put_flash(:error, "Failed to delete book")}
@@ -40,11 +49,32 @@ defmodule AshSvelteAppWeb.Live.BooksLibrary do
 
   def handle_event("ADD_BOOK", %{"title" => title, "author" => author, "isbn" => isbn}, socket) do
     with {:ok, new_book} <- Ash.create(Book, %{title: title, author: author, isbn: isbn}) do
-      books = [derive_book(new_book) | socket.assigns.books]
-      {:noreply, assign(socket, :books, books) |> put_flash(:info, "Book added successfully")}
+      derived_book = derive_book(new_book)
+      Phoenix.PubSub.broadcast(AshSvelteApp.PubSub, "books:library", {:book_added, derived_book})
+
+      {:noreply,
+       socket
+       |> assign(:books, [derived_book | socket.assigns.books])
+       |> put_flash(:info, "Book added successfully")}
     else
       {:error, _} -> {:noreply, assign(socket, :books, socket.assigns.books) |> put_flash(:error, "Failed to add book")}
     end
+  end
+
+  def handle_info({:book_added, book}, socket) do
+    # Only add if not already in the list (to avoid duplicates if the user who added it is also subscribed)
+    books =
+      if Enum.any?(socket.assigns.books, &(&1.id == book.id)) do
+        socket.assigns.books
+      else
+        [book | socket.assigns.books]
+      end
+
+    {:noreply, assign(socket, :books, books)}
+  end
+
+  def handle_info({:book_deleted, id}, socket) do
+    {:noreply, assign(socket, :books, Enum.reject(socket.assigns.books, &(&1.id == id)))}
   end
 
   defp derive_books([]), do: []
